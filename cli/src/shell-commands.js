@@ -20,11 +20,22 @@ const runCommand = async (command, logOutput = true) => {
 
 export const isNginxServiceRunning = async () => {
   const { stdout } = await runCommand('docker compose ps --format json', false);
-  const containers = JSON.parse(stdout);
-  return !!containers.find(
-    (container) =>
-      container.Service === 'nginx' && container.State === 'running'
-  );
+
+  try{
+    const containers = stdout
+        .split('\n') // Split the raw output into lines
+        .filter(line => line.trim() !== '') // Remove empty lines
+        .map(line => JSON.parse(line)); // Parse each line as a JSON object
+
+    // Search for the nginx service in a running state
+    return !!containers.find(
+        (container) =>
+            container.Service === 'nginx' && container.State === 'running'
+    );
+  } catch (error) {
+    console.error('Error processing docker compose output:', error);
+    return false; // Assume the nginx service is not running on error
+  }
 };
 
 export const execNginxReload = async () => {
